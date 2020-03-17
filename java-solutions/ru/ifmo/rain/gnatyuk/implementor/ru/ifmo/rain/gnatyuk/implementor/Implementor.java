@@ -1,6 +1,8 @@
 package ru.ifmo.rain.gnatyuk.implementor;
 
-import info.kgeorgiy.java.advanced.implementor.*;
+import info.kgeorgiy.java.advanced.implementor.Impler;
+import info.kgeorgiy.java.advanced.implementor.ImplerException;
+import info.kgeorgiy.java.advanced.implementor.JarImpler;
 
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
@@ -23,8 +25,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.ZipEntry;
 
-
-import static ru.ifmo.rain.gnatyuk.implementor.Packer.*;
+import static ru.ifmo.rain.gnatyuk.implementor.Packer.merge;
+import static ru.ifmo.rain.gnatyuk.implementor.Packer.mergeWithSeparator;
 
 /**
  * Class implements {@link Impler} and {@link JarImpler}.
