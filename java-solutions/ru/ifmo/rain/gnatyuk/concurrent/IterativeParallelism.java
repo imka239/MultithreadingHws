@@ -187,7 +187,7 @@ public class IterativeParallelism implements AdvancedIP {
     @Override
     public <T> T reduce(int threads, List<T> values, Monoid<T> monoid) throws InterruptedException {
         Function<Stream<T>, T> reducer = s -> s.reduce(monoid.getIdentity(), monoid.getOperator());
-        return reducer.apply(firstFunc(threads, values, reducer).stream());
+        return twoFunc(threads, values, reducer, reducer);
     }
 
     /**
@@ -207,7 +207,6 @@ public class IterativeParallelism implements AdvancedIP {
     public <T, R> R mapReduce(int threads, List<T> values, Function<T, R> lift, Monoid<R> monoid) throws InterruptedException {
         Function<Stream<T>, R> reducer1 = s -> s.map(lift).reduce(monoid.getIdentity(), monoid.getOperator());
         Function<Stream<R>, R> reducer2 = s -> s.reduce(monoid.getIdentity(), monoid.getOperator());
-        List<R> ff = firstFunc(threads, values, reducer1);
-        return reducer2.apply(ff.stream());
+        return twoFunc(threads, values, reducer1, reducer2);
     }
 }
