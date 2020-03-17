@@ -181,7 +181,7 @@ public class Implementor implements Impler, JarImpler {
      * Builds a <code>.jar</code> file containing compiled by {@link #compileClass(Class, Path)}
      * sources of implemented class using basic {@link Manifest}.
      *
-     * @param jarFile path where resulting <code>.jar</code> should be saved
+     * @param jarFile path where resulting {@code .jar} should be saved
      * @param tempDirectory temporary directory where all <code>.class</code> files are stored
      * @param token type token that was implemented
      * @throws ImplerException if {@link JarOutputStream} throws an {@link IOException}
@@ -204,7 +204,7 @@ public class Implementor implements Impler, JarImpler {
     /**
      * implements Jar for {@code token}
      * @param token type token to create implementation for.
-     * @param jarFile target <tt>.jar</tt> file.
+     * @param jarFile target {@code jar} file.
      * @throws ImplerException if {@code token} or {@code jarFile} is null
      */
 

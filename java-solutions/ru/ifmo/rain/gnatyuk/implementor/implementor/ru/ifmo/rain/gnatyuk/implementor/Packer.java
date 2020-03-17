@@ -15,7 +15,7 @@ class Packer {
     /**
      * merge {@code elements}, transformed by {@code transform}, concatenated by ", ".
      * @param elements array of args to merge
-     * @param transform func, that transform {@link <T>} to {@link String}
+     * @param transform func, that transform {@code <T>} to {@link String}
      * @param <T> type of given items
      * @return {@link String} from elements, transformed by {@code transform}
      */
