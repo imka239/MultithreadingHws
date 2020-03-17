@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
  * @author imka
  * @version 1.0
  */
-class Packer {
+public class Packer {
 
     /**
      * merge {@code elements}, transformed by {@code transform}, concatenated by ", ".

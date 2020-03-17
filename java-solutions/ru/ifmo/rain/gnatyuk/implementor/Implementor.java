@@ -25,8 +25,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.ZipEntry;
 
-import static ru.ifmo.rain.gnatyuk.implementor.Packer.merge;
-import static ru.ifmo.rain.gnatyuk.implementor.Packer.mergeWithSeparator;
 
 /**
  * Class implements {@link Impler} and {@link JarImpler}.
@@ -105,7 +103,7 @@ public class Implementor implements Impler, JarImpler {
      */
 
     private String getExecutableExceptions(Executable executable) {
-        return getIfNotEmpty(merge(executable.getExceptionTypes(), Class::getCanonicalName));
+        return getIfNotEmpty(Packer.merge(executable.getExceptionTypes(), Class::getCanonicalName));
     }
 
     /**
@@ -115,7 +113,7 @@ public class Implementor implements Impler, JarImpler {
      */
     private static String getIfNotEmpty(String itemList) {
         if (!itemList.isEmpty()) {
-            return mergeWithSeparator(System.lineSeparator(), "throws", itemList);
+            return Packer.mergeWithSeparator(System.lineSeparator(), "throws", itemList);
         }
         return "";
     }
@@ -257,7 +255,7 @@ public class Implementor implements Impler, JarImpler {
      */
 
     private String getMethodBody(Method method) {
-        return mergeWithSeparator(" ", "return", getDefaultValue(method.getReturnType())) + ";";
+        return Packer.mergeWithSeparator(" ", "return", getDefaultValue(method.getReturnType())) + ";";
     }
 
     /**
@@ -268,8 +266,8 @@ public class Implementor implements Impler, JarImpler {
      */
 
     private String getMethod(Method method) {
-        return mergeWithSeparator(" ", getExecutableModifiers(method), method.getReturnType().getCanonicalName(), method.getName() + getExecutableArguments(method),
-                getExecutableExceptions(method), mergeWithSeparator(System.lineSeparator(), "{", getMethodBody(method) + '}'));
+        return Packer.mergeWithSeparator(" ", getExecutableModifiers(method), method.getReturnType().getCanonicalName(), method.getName() + getExecutableArguments(method),
+                getExecutableExceptions(method), Packer.mergeWithSeparator(System.lineSeparator(), "{", getMethodBody(method) + '}'));
     }
 
     /**
@@ -383,11 +381,11 @@ public class Implementor implements Impler, JarImpler {
      */
 
     private String getConstructor(Constructor<?> constructor) {
-        return mergeWithSeparator(" ",
+        return Packer.mergeWithSeparator(" ",
                 getExecutableModifiers(constructor),
                 getClassName(constructor.getDeclaringClass()) + getExecutableArguments(constructor),
                 getExecutableExceptions(constructor),
-                mergeWithSeparator(System.lineSeparator(), "{", getConstructorBody(constructor), "}")
+                Packer.mergeWithSeparator(System.lineSeparator(), "{", getConstructorBody(constructor), "}")
         );
     }
 
@@ -421,7 +419,7 @@ public class Implementor implements Impler, JarImpler {
      */
 
     private static String getPackage(Class<?> token) {
-        return token.getPackageName() == null ? "" : mergeWithSeparator(" " , token.getPackage() + ";");
+        return token.getPackageName() == null ? "" : Packer.mergeWithSeparator(" " , token.getPackage() + ";");
     }
 
     /**
@@ -432,10 +430,10 @@ public class Implementor implements Impler, JarImpler {
      */
 
     private String getClassDefinition(Class<?> token) {
-        return mergeWithSeparator( " ",
+        return Packer.mergeWithSeparator( " ",
                 getClassModifiers(token),
                 "class", getClassName(token),
-                mergeWithSeparator(" ", token.isInterface() ? "implements" : "extends", token.getCanonicalName())
+                Packer.mergeWithSeparator(" ", token.isInterface() ? "implements" : "extends", token.getCanonicalName())
         );
     }
 
@@ -448,9 +446,9 @@ public class Implementor implements Impler, JarImpler {
      */
 
     private String getFullClass(Class<?> token) throws ImplerException {
-        return mergeWithSeparator(System.lineSeparator(),
+        return Packer.mergeWithSeparator(System.lineSeparator(),
                 getPackage(token),
-                mergeWithSeparator(" ", getClassDefinition(token), "{"),
+                Packer.mergeWithSeparator(" ", getClassDefinition(token), "{"),
                 getConstructors(token),
                 getMethods(token),
                 "}"

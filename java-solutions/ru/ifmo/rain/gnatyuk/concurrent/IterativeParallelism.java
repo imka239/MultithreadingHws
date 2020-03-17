@@ -1,16 +1,12 @@
-package ru.ifmo.gnatyuk.concurrent;
+package ru.ifmo.rain.gnatyuk.concurrent;
 
 import info.kgeorgiy.java.advanced.concurrent.AdvancedIP;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 /**
  * {@link IterativeParallelism} uses treads, given by user and {@link List} of values to do some functions.
  * Implements interface ListIP.
@@ -33,6 +29,10 @@ public class IterativeParallelism implements AdvancedIP {
         return process2.apply(firstFunc(threads, values, process1).stream());
     }
 
+    private <T> T doubleFunc(int threads, List<T> values, Function<Stream<T>, T> process1) throws InterruptedException {
+        return process1.apply(firstFunc(threads, values, process1).stream());
+    }
+
     private <T, M> List<M> firstFunc(int threads, List<T> values, Function<Stream<T>, M> process1) throws InterruptedException {
         List<Stream<T>> parts = split(threads, values);
         List<Thread> workers = new ArrayList<>();
@@ -43,26 +43,19 @@ public class IterativeParallelism implements AdvancedIP {
             workers.add(thread);
             thread.start();
         }
-        List<InterruptedException> exceptions = new ArrayList<>();
-        boolean interrupt = false;
-        for (Thread t : workers) {
+        for (Iterator<Thread> i = workers.iterator(); i.hasNext(); ) {
+            Thread now = i.next();
             try {
-                if (!interrupt) {
-                    t.join();
-                } else {
-                    t.interrupt();
-                }
+                now.join();
             } catch (InterruptedException e) {
-                exceptions.add(e);
-                interrupt = true;
+                now.interrupt();
+                InterruptedException exception = new InterruptedException("Interrupted thread");
+                exception.addSuppressed(e);
+                for (; i.hasNext(); ) {
+                    i.next().interrupt();
+                }
+                throw exception;
             }
-        }
-
-        if (!exceptions.isEmpty()) {
-            InterruptedException e = new InterruptedException();
-            exceptions.forEach(e::addSuppressed);
-
-            throw e;
         }
         return maximums;
     }
@@ -133,7 +126,7 @@ public class IterativeParallelism implements AdvancedIP {
 
     @Override
     public <T> T maximum(int threads, List<? extends T> values, Comparator<? super T> comparator) throws InterruptedException {
-        return twoFunc(threads, values, (s -> s.max(comparator).orElse(null)), (s -> s.max(comparator).orElse(null)));
+        return doubleFunc(threads, values, (s -> s.max(comparator).orElse(null)));
     }
 
     /**
@@ -152,8 +145,9 @@ public class IterativeParallelism implements AdvancedIP {
 
     @Override
     public <T> T minimum(int threads, List<? extends T> values, Comparator<? super T> comparator) throws InterruptedException {
-        return twoFunc(threads, values, (s -> s.min(comparator).orElse(null)), (s -> s.min(comparator).orElse(null)));
+        return doubleFunc(threads, values, (s -> s.min(comparator).orElse(null)));
     }
+
 
     /**
      * Returns whether all values satisfies predicate.
@@ -187,7 +181,7 @@ public class IterativeParallelism implements AdvancedIP {
      */
     @Override
     public <T> boolean any(int threads, List<? extends T> values, Predicate<? super T> predicate) throws InterruptedException {
-        return twoFunc(threads, values, (s -> s.anyMatch(predicate)), (s -> s.anyMatch(Boolean::booleanValue)));
+        return !all(threads, values, predicate.negate());
     }
 
     /**
@@ -205,7 +199,7 @@ public class IterativeParallelism implements AdvancedIP {
     @Override
     public <T> T reduce(int threads, List<T> values, Monoid<T> monoid) throws InterruptedException {
         Function<Stream<T>, T> reducer = s -> s.reduce(monoid.getIdentity(), monoid.getOperator());
-        return twoFunc(threads, values, reducer, reducer);
+        return doubleFunc(threads, values, reducer);
     }
 
     /**
