@@ -1,4 +1,4 @@
-package ru.ifmo.gnatyuk.concurrent;
+package ru.ifmo.rain.gnatyuk.concurrent;
 
 import info.kgeorgiy.java.advanced.concurrent.AdvancedIP;
 import info.kgeorgiy.java.advanced.mapper.ParallelMapper;
