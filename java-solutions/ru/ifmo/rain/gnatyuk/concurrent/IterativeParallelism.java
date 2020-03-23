@@ -1,6 +1,7 @@
 package ru.ifmo.rain.gnatyuk.concurrent;
 
 import info.kgeorgiy.java.advanced.concurrent.AdvancedIP;
+import info.kgeorgiy.java.advanced.mapper.ParallelMapper;
 
 import java.util.*;
 import java.util.function.Function;
@@ -16,6 +17,21 @@ import java.util.stream.Stream;
  */
 
 public class IterativeParallelism implements AdvancedIP {
+
+    private final ParallelMapper mapper;
+
+    //todo
+
+    public IterativeParallelism(ParallelMapper mapper) {
+        this.mapper = mapper;
+    }
+
+    //todo
+
+    public IterativeParallelism() {
+        this.mapper = null;
+    }
+
     // :NOTE: `> >` viva la C++!
     //private <T> List<Stream<T> > split(final int threads, final List<T> values) {
     private <T> List<Stream<T>> split(final int threads, final List<T> values) {
@@ -38,25 +54,7 @@ public class IterativeParallelism implements AdvancedIP {
         return parts;
     }
 
-    private <T, M, R> R twoFunc(final int threads, final List<T> values, final Function<Stream<T>, M> process1, final Function<Stream<M>, R> process2) throws InterruptedException {
-        return process2.apply(oneFunc(threads, values, process1).stream());
-    }
-
-    private <T> T doubleFunc(final int threads, final List<T> values, final Function<Stream<T>, T> func) throws InterruptedException {
-        return func.apply(oneFunc(threads, values, func).stream());
-    }
-
-    // :NOTE: `process1` чудеса нейминга!
-    private <T, M> List<M> oneFunc(final int threads, final List<T> values, final Function<Stream<T>, M> func) throws InterruptedException {
-        final List<Stream<T>> parts = split(threads, values);
-        final List<Thread> workers = new ArrayList<>();
-        final List<M> maximums = new ArrayList<>(Collections.nCopies(parts.size(), null));
-        for (int i = 0; i < parts.size(); i++) {
-            final int index = i;
-            final Thread thread = new Thread(() -> maximums.set(index, func.apply(parts.get(index))));
-            workers.add(thread);
-            thread.start();
-        }
+    private void joinAll(List<Thread> workers) throws InterruptedException {
         for (int i = 0; i < workers.size(); i++) {
             try {
                 workers.get(i).join();
@@ -77,7 +75,42 @@ public class IterativeParallelism implements AdvancedIP {
                 throw exception;
             }
         }
-        return maximums;
+    }
+
+    static void joinAllNoThrow(List<Thread> workers) {
+        workers.forEach(thread -> {
+            try {
+                thread.join();
+            } catch (InterruptedException ignored) {
+            }
+        });
+    }
+
+    private <T, M, R> R twoFunc(final int threads, final List<T> values, final Function<Stream<T>, M> process1, final Function<Stream<M>, R> process2) throws InterruptedException {
+        return process2.apply(oneFunc(threads, values, process1).stream());
+    }
+
+    private <T> T doubleFunc(final int threads, final List<T> values, final Function<Stream<T>, T> func) throws InterruptedException {
+        return func.apply(oneFunc(threads, values, func).stream());
+    }
+
+    private <T, M> List<M> oneFunc(final int threads, final List<T> values, final Function<Stream<T>, M> func) throws InterruptedException {
+        final List<Stream<T>> parts = split(threads, values);
+        List<M> counted;
+        if (mapper == null) {
+            List<Thread> workers = new ArrayList<>();
+            counted = new ArrayList<>(Collections.nCopies(parts.size(), null));
+            for (int i = 0; i < parts.size(); i++) {
+                final int index = i;
+                final Thread thread = new Thread(() -> counted.set(index, func.apply(parts.get(index))));
+                workers.add(thread);
+                thread.start();
+            }
+            joinAll(workers);
+        } else {
+            counted = mapper.map(func, parts);
+        }
+        return counted;
     }
     /**
      * Join values to string.
