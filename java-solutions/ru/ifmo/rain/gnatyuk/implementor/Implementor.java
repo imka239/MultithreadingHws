@@ -1,4 +1,4 @@
-package ru.ifmo.rain.gnatyuk.implementor;
+package ru.ifmo.gnatyuk.implementor;
 
 import info.kgeorgiy.java.advanced.implementor.Impler;
 import info.kgeorgiy.java.advanced.implementor.ImplerException;
@@ -93,15 +93,6 @@ public class Implementor implements Impler {
             return Packer.mergeWithSeparator(System.lineSeparator(), "throws", itemList);
         }
         return "";
-    }
-
-    /**
-     * return all Modifiers of class {@code token}
-     * {@link Modifier#ABSTRACT}, {@link Modifier#INTERFACE}, {@link Modifier#STATIC}, {@link Modifier#PROTECTED} excluded
-     * @return {@link String} of token's Modifiers.
-     */
-    private String getClassModifiers() {
-        return Modifier.toString(Modifier.PUBLIC);
     }
 
     /**
@@ -315,14 +306,14 @@ public class Implementor implements Impler {
 
     /**
      * return the full name of the class {@code token}. It's combining
-     * {@link #getClassModifiers()}, {@link #getClassName(Class)}.
+     * {@code Modifier}, {@link #getClassName(Class)}.
      * @param token  instance of {@link Class}
      * @return {@link String} full class name
      */
 
     private String getClassDefinition(final Class<?> token) {
         return Packer.mergeWithSeparator( " ",
-                getClassModifiers(),
+                Modifier.toString(Modifier.PUBLIC),
                 "class", getClassName(token),
                 Packer.mergeWithSeparator(" ", token.isInterface() ? "implements" : "extends", token.getCanonicalName())
         );
