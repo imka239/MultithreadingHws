@@ -128,7 +128,7 @@ public class Implementor implements Impler {
     private String getExecutableArguments(Executable executable) {
         Class<?>[] elems = executable.getParameterTypes();
         String[] str = new String[elems.length];
-        IntStream.range(0, elems.length).forEach(i -> str[i] = elems[i].getCanonicalName() + " _" + i);
+        IntStream.range(0, elems.length).forEachOrdered(i -> str[i] = elems[i].getCanonicalName() + " _" + i);
         return "(" + String.join(", ",str) + ")";
     }
 
@@ -141,7 +141,7 @@ public class Implementor implements Impler {
     private String getExecutableArgumentsNames(Executable executable) {
         Class<?>[] elems = executable.getParameterTypes();
         String[] str = new String[elems.length];
-        IntStream.range(0, elems.length).forEach(i -> str[i] = "_" + i);
+        IntStream.range(0, elems.length).forEachOrdered(i -> str[i] = "_" + i);
         return "(" + String.join(", ", str) + ")";
     }
 
