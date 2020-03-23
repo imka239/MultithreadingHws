@@ -102,7 +102,6 @@ public class Implementor implements Impler {
      * @param token instance of {@link Class}
      * @return {@link String} of token's Modifiers.
      */
-
     private String getClassModifiers(final Class<?> token) {
         return Modifier.toString(Modifier.PUBLIC);
     }
@@ -124,11 +123,11 @@ public class Implementor implements Impler {
      */
 
 
-    private String getExecutableArguments(final Executable executable) {
+    private static String getExecutableArguments(final Executable executable) {
         final Class<?>[] elems = executable.getParameterTypes();
-        final String[] str = new String[elems.length];
-        IntStream.range(0, elems.length).forEachOrdered(i -> str[i] = elems[i].getCanonicalName() + " _" + i);
-        return "(" + String.join(", ",str) + ")";
+        return IntStream.range(0, elems.length)
+                .mapToObj(i -> elems[i].getCanonicalName() + " _" + i)
+                .collect(Collectors.joining(",", "(", ")"));
     }
 
     /**
@@ -137,7 +136,7 @@ public class Implementor implements Impler {
      * @return {@link String} from list of types from {@code executable}
      */
 
-    private String getExecutableArgumentsNames(final Executable executable) {
+    private static String getExecutableArgumentsNames(final Executable executable) {
         final Class<?>[] elems = executable.getParameterTypes();
         final String[] str = new String[elems.length];
         IntStream.range(0, elems.length).forEachOrdered(i -> str[i] = "_" + i);
@@ -265,7 +264,7 @@ public class Implementor implements Impler {
      * @return {@link String} "super" + {@link #getExecutableArgumentsNames(Executable)} + ";" default constructor's body
      */
 
-    private String getConstructorBody(final Constructor<?> constructor) {
+    private static String getConstructorBody(final Constructor<?> constructor) {
         return "super" + getExecutableArgumentsNames(constructor) + ";";
     }
 
@@ -297,15 +296,13 @@ public class Implementor implements Impler {
         if (token.isInterface()) {
             return "";
         }
-        final List<Constructor<?>> constructors = Arrays.stream(token.getDeclaredConstructors())
+        final Optional<Constructor<?>> constructors = Arrays.stream(token.getDeclaredConstructors())
                 .filter(c -> !Modifier.isPrivate(c.getModifiers()))
-                .collect(Collectors.toList());
+                .findAny();
         if (constructors.isEmpty()) {
             throw new ImplerException("Class with no non-private constructors can not be extended");
         }
-        return constructors.stream()
-                .map(this::getConstructor)
-                .collect(Collectors.joining(System.lineSeparator()));
+        return getConstructor(constructors.get());
     }
 
     /**
