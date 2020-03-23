@@ -27,32 +27,31 @@ import java.util.stream.IntStream;
  */
 
 public class Implementor implements Impler {
-
+    // :NOTE: Ссылки на себя
     /**
      * Main. Gets args from console for {@link Implementor}
      * 2-args {@code className outPath} creates file
      * {@code .java} file in {@code outPath} by {@link #implement(Class, Path)}
      * @param args arguments for application
      */
-
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         //new Implementor().implement(Child.class, Path.of("C:\\Users\\ASUS\\IdeaProjects\\javaAdvanced"));
         if (args == null || args.length != 2) {
             System.err.println("Expected 2 args: classname, outPath");
             return;
         }
-        for (String arg : args) {
+        for (final String arg : args) {
             if (arg == null) {
                 System.out.println(Arrays.toString(args) + "is null");
             }
         }
         try {
             new Implementor().implement(Class.forName(args[0]), Path.of(args[1]));
-        } catch (ClassNotFoundException e) {
+        } catch (final ClassNotFoundException e) {
             System.err.println("Class not Found" + e.getMessage());
-        } catch (ImplerException e) {
+        } catch (final ImplerException e) {
             System.err.println("Failed to Implement" + e.getMessage());
-        } catch (InvalidPathException e) {
+        } catch (final InvalidPathException e) {
             System.err.println("Failed to make Path" + e.getMessage());
         }
     }
@@ -63,7 +62,7 @@ public class Implementor implements Impler {
      * @return {@link String} representing default value of {@code ret}
      */
 
-    private String getDefaultValue(Class<?> ret) {
+    private String getDefaultValue(final Class<?> ret) {
         if (!ret.isPrimitive()) {
             return "null";
         } else if (ret.equals(void.class)) {
@@ -81,7 +80,7 @@ public class Implementor implements Impler {
      * @return "", if there are no {@link Exception} in {@code executable}, "throws" + list of exceptions, separated by ", " otherwise.
      */
 
-    private String getExecutableExceptions(Executable executable) {
+    private String getExecutableExceptions(final Executable executable) {
         return getIfNotEmpty(Packer.merge(executable.getExceptionTypes(), Class::getCanonicalName));
     }
 
@@ -90,7 +89,7 @@ public class Implementor implements Impler {
      * @param itemList string, that will merge prefix, if its't empty.
      * @return "" if <code>itemList</code> isn't empty, otherwise concatenation of {@code prefix} and {@code item} with <code>System.lineSeparator</code>
      */
-    private static String getIfNotEmpty(String itemList) {
+    private static String getIfNotEmpty(final String itemList) {
         if (!itemList.isEmpty()) {
             return Packer.mergeWithSeparator(System.lineSeparator(), "throws", itemList);
         }
@@ -104,8 +103,8 @@ public class Implementor implements Impler {
      * @return {@link String} of token's Modifiers.
      */
 
-    private String getClassModifiers(Class<?> token) {
-        return Modifier.toString(token.getModifiers() & ~Modifier.INTERFACE & ~Modifier.ABSTRACT & ~Modifier.STATIC & ~Modifier.PROTECTED);
+    private String getClassModifiers(final Class<?> token) {
+        return Modifier.toString(Modifier.PUBLIC);
     }
 
     /**
@@ -114,7 +113,7 @@ public class Implementor implements Impler {
      * @param executable instance of {@link Executable}
      * @return {@link String} of token's Modifiers.
      */
-    private String getExecutableModifiers(Executable executable) {
+    private String getExecutableModifiers(final Executable executable) {
         return Modifier.toString(executable.getModifiers() & ~Modifier.NATIVE & ~Modifier.TRANSIENT & ~Modifier.ABSTRACT);
     }
 
@@ -125,9 +124,9 @@ public class Implementor implements Impler {
      */
 
 
-    private String getExecutableArguments(Executable executable) {
-        Class<?>[] elems = executable.getParameterTypes();
-        String[] str = new String[elems.length];
+    private String getExecutableArguments(final Executable executable) {
+        final Class<?>[] elems = executable.getParameterTypes();
+        final String[] str = new String[elems.length];
         IntStream.range(0, elems.length).forEachOrdered(i -> str[i] = elems[i].getCanonicalName() + " _" + i);
         return "(" + String.join(", ",str) + ")";
     }
@@ -138,9 +137,9 @@ public class Implementor implements Impler {
      * @return {@link String} from list of types from {@code executable}
      */
 
-    private String getExecutableArgumentsNames(Executable executable) {
-        Class<?>[] elems = executable.getParameterTypes();
-        String[] str = new String[elems.length];
+    private String getExecutableArgumentsNames(final Executable executable) {
+        final Class<?>[] elems = executable.getParameterTypes();
+        final String[] str = new String[elems.length];
         IntStream.range(0, elems.length).forEachOrdered(i -> str[i] = "_" + i);
         return "(" + String.join(", ", str) + ")";
     }
@@ -151,7 +150,7 @@ public class Implementor implements Impler {
      * @return {@link String} "return" + {@link #getDefaultValue(Class)} + ";" default method body
      */
 
-    private String getMethodBody(Method method) {
+    private String getMethodBody(final Method method) {
         return Packer.mergeWithSeparator(" ", "return", getDefaultValue(method.getReturnType())) + ";";
     }
 
@@ -162,7 +161,7 @@ public class Implementor implements Impler {
      * @return {@link String} implemented method {@link Method}
      */
 
-    private String getMethod(Method method) {
+    private String getMethod(final Method method) {
         return Packer.mergeWithSeparator(" ", getExecutableModifiers(method), method.getReturnType().getCanonicalName(), method.getName() + getExecutableArguments(method),
                 getExecutableExceptions(method), Packer.mergeWithSeparator(System.lineSeparator(), "{", getMethodBody(method) + '}'));
     }
@@ -194,7 +193,7 @@ public class Implementor implements Impler {
          * Constructor, wrapping {@link Method}
          * @param method instance of {@link Method} class to be wrapped inside
          */
-        Hasher(Method method) {
+        Hasher(final Method method) {
             this.method = method;
         }
 
@@ -228,9 +227,9 @@ public class Implementor implements Impler {
          */
 
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(final Object obj) {
             if (obj instanceof Hasher) {
-                Hasher hm = (Hasher) obj;
+                final Hasher hm = (Hasher) obj;
                 return method.getName().equals(hm.method.getName()) &&
                         Arrays.equals(method.getParameterTypes(), hm.method.getParameterTypes()) &&
                         method.getReturnType().equals(hm.method.getReturnType());
@@ -247,7 +246,7 @@ public class Implementor implements Impler {
      */
 
     private String getMethods(Class<?> token) throws ImplerException {
-        Set<Hasher> methods = new HashSet<>();
+        final Set<Hasher> methods = new HashSet<>();
         Arrays.stream(token.getMethods()).map(Hasher::new).forEach(methods::add);
         if (Modifier.isPrivate(token.getModifiers())) {
             throw new ImplerException("Can't override private class");
@@ -266,7 +265,7 @@ public class Implementor implements Impler {
      * @return {@link String} "super" + {@link #getExecutableArgumentsNames(Executable)} + ";" default constructor's body
      */
 
-    private String getConstructorBody(Constructor<?> constructor) {
+    private String getConstructorBody(final Constructor<?> constructor) {
         return "super" + getExecutableArgumentsNames(constructor) + ";";
     }
 
@@ -277,7 +276,7 @@ public class Implementor implements Impler {
      * @return {@link String} default constructor
      */
 
-    private String getConstructor(Constructor<?> constructor) {
+    private String getConstructor(final Constructor<?> constructor) {
         return Packer.mergeWithSeparator(" ",
                 getExecutableModifiers(constructor),
                 getClassName(constructor.getDeclaringClass()) + getExecutableArguments(constructor),
@@ -294,11 +293,11 @@ public class Implementor implements Impler {
      * @throws ImplerException if all constructors are private, or there are no constructors.
      */
 
-    private String getConstructors(Class<?> token) throws ImplerException {
+    private String getConstructors(final Class<?> token) throws ImplerException {
         if (token.isInterface()) {
             return "";
         }
-        List<Constructor<?>> constructors = Arrays.stream(token.getDeclaredConstructors())
+        final List<Constructor<?>> constructors = Arrays.stream(token.getDeclaredConstructors())
                 .filter(c -> !Modifier.isPrivate(c.getModifiers()))
                 .collect(Collectors.toList());
         if (constructors.isEmpty()) {
@@ -315,7 +314,7 @@ public class Implementor implements Impler {
      * @return full package of {@code token}, if it's null return ""
      */
 
-    private static String getPackage(Class<?> token) {
+    private static String getPackage(final Class<?> token) {
         return token.getPackageName() == null ? "" : Packer.mergeWithSeparator(" " , token.getPackage() + ";");
     }
 
@@ -326,7 +325,7 @@ public class Implementor implements Impler {
      * @return {@link String} full class name
      */
 
-    private String getClassDefinition(Class<?> token) {
+    private String getClassDefinition(final Class<?> token) {
         return Packer.mergeWithSeparator( " ",
                 getClassModifiers(token),
                 "class", getClassName(token),
@@ -342,7 +341,7 @@ public class Implementor implements Impler {
      * @throws ImplerException if there are exceptions in {@link #getConstructors(Class)} or {@link #getMethods(Class)}
      */
 
-    private String getFullClass(Class<?> token) throws ImplerException {
+    private String getFullClass(final Class<?> token) throws ImplerException {
         return Packer.mergeWithSeparator(System.lineSeparator(),
                 getPackage(token),
                 Packer.mergeWithSeparator(" ", getClassDefinition(token), "{"),
@@ -359,7 +358,7 @@ public class Implementor implements Impler {
      * @return String of Simple name for the answer.
      */
 
-    String getClassName(Class<?> token) {
+    String getClassName(final Class<?> token) {
         return token.getSimpleName() + "Impl";
     }
 
@@ -369,8 +368,8 @@ public class Implementor implements Impler {
      * @throws IOException if there are no possibilities to create Directories.
      */
 
-    private static void newPath(Path file) throws IOException {
-        Path parent = file.getParent();
+    private static void newPath(final Path file) throws IOException {
+        final Path parent = file.getParent();
         if (parent != null) {
             Files.createDirectories(parent);
         }
@@ -383,9 +382,9 @@ public class Implementor implements Impler {
      * @return the encoded {@link String}
      */
 
-    private static String encode(String arg) {
-        StringBuilder builder = new StringBuilder();
-        for (char c : arg.toCharArray()) {
+    private static String encode(final String arg) {
+        final StringBuilder builder = new StringBuilder();
+        for (final char c : arg.toCharArray()) {
             builder.append(c < 128 ? String.valueOf(c) : String.format("\\u%04x", (int) c));
         }
         return builder.toString();
@@ -401,24 +400,23 @@ public class Implementor implements Impler {
      */
 
     @Override
-    public void implement(Class<?> token, Path root) throws ImplerException {
+    public void implement(final Class<?> token, final Path root) throws ImplerException {
         Objects.requireNonNull(token, "token");
         Objects.requireNonNull(root, "root");
-        Path realPath;
+
         if (token.isPrimitive() || token.isArray() ||
                 Modifier.isFinal(token.getModifiers()) || token == Enum.class) {
             throw new ImplerException("Unsupported class token given");
         }
+
         try {
-            realPath = root.resolve(Path.of(token.getPackageName().replace('.', File.separatorChar),
+            final Path realPath = root.resolve(Path.of(token.getPackageName().replace('.', File.separatorChar),
                     getClassName(token)  + ".java"));
             newPath(realPath);
-        } catch (IOException e) {
-            throw new ImplerException(e);
-        }
-        try (BufferedWriter writer = Files.newBufferedWriter(realPath)) {
-            writer.write(encode(getFullClass(token)));
-        } catch (IOException e) {
+            try (final BufferedWriter writer = Files.newBufferedWriter(realPath)) {
+                writer.write(encode(getFullClass(token)));
+            }
+        } catch (final IOException e) {
             throw new ImplerException(e);
         }
     }
