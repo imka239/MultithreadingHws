@@ -1,4 +1,4 @@
-package ru.ifmo.gnatyuk.implementor;
+package ru.ifmo.rain.gnatyuk.implementor;
 
 import info.kgeorgiy.java.advanced.implementor.Impler;
 import info.kgeorgiy.java.advanced.implementor.ImplerException;
