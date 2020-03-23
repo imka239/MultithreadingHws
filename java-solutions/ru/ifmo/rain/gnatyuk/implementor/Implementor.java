@@ -27,9 +27,8 @@ import java.util.stream.IntStream;
  */
 
 public class Implementor implements Impler {
-    // :NOTE: Ссылки на себя
     /**
-     * Main. Gets args from console for {@link Implementor}
+     * Main. Gets args from console
      * 2-args {@code className outPath} creates file
      * {@code .java} file in {@code outPath} by {@link #implement(Class, Path)}
      * @param args arguments for application
@@ -85,9 +84,9 @@ public class Implementor implements Impler {
     }
 
     /**
-     * Joins <code>prefix</code> and <code>itemList</code>, with separator <code>System.lineSeparator</code> if itemList isn't empty.
+     * Joins {@code predix} and {@code itemList}, with separator {@code System.lineSeparator} if itemList isn't empty.
      * @param itemList string, that will merge prefix, if its't empty.
-     * @return "" if <code>itemList</code> isn't empty, otherwise concatenation of {@code prefix} and {@code item} with <code>System.lineSeparator</code>
+     * @return "" if {@code itemList} isn't empty, otherwise concatenation of {@code prefix} and {@code item} with {@code System.lineSeparator}
      */
     private static String getIfNotEmpty(final String itemList) {
         if (!itemList.isEmpty()) {
@@ -99,10 +98,9 @@ public class Implementor implements Impler {
     /**
      * return all Modifiers of class {@code token}
      * {@link Modifier#ABSTRACT}, {@link Modifier#INTERFACE}, {@link Modifier#STATIC}, {@link Modifier#PROTECTED} excluded
-     * @param token instance of {@link Class}
      * @return {@link String} of token's Modifiers.
      */
-    private String getClassModifiers(final Class<?> token) {
+    private String getClassModifiers() {
         return Modifier.toString(Modifier.PUBLIC);
     }
 
@@ -138,9 +136,9 @@ public class Implementor implements Impler {
 
     private static String getExecutableArgumentsNames(final Executable executable) {
         final Class<?>[] elems = executable.getParameterTypes();
-        final String[] str = new String[elems.length];
-        IntStream.range(0, elems.length).forEachOrdered(i -> str[i] = "_" + i);
-        return "(" + String.join(", ", str) + ")";
+        return IntStream.range(0, elems.length)
+                .mapToObj(i -> "_" + i)
+                .collect(Collectors.joining(",", "(", ")"));
     }
 
     /**
@@ -317,14 +315,14 @@ public class Implementor implements Impler {
 
     /**
      * return the full name of the class {@code token}. It's combining
-     * {@link #getClassModifiers(Class)}, {@link #getClassName(Class)}.
+     * {@link #getClassModifiers()}, {@link #getClassName(Class)}.
      * @param token  instance of {@link Class}
      * @return {@link String} full class name
      */
 
     private String getClassDefinition(final Class<?> token) {
         return Packer.mergeWithSeparator( " ",
-                getClassModifiers(token),
+                getClassModifiers(),
                 "class", getClassName(token),
                 Packer.mergeWithSeparator(" ", token.isInterface() ? "implements" : "extends", token.getCanonicalName())
         );
