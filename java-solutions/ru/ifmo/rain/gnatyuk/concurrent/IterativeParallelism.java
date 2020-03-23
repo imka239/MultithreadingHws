@@ -1,4 +1,4 @@
-package ru.ifmo.rain.gnatyuk.concurrent;
+package ru.ifmo.gnatyuk.concurrent;
 
 import info.kgeorgiy.java.advanced.concurrent.AdvancedIP;
 import info.kgeorgiy.java.advanced.mapper.ParallelMapper;
@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 /**
  * {@link IterativeParallelism} uses treads, given by user and {@link List} of values to do some functions.
- * Implements interface ListIP.
+ * Implements interface {@link AdvancedIP}.
  * @author gnatyuk
  * @version 1.0
  *
@@ -20,13 +20,19 @@ public class IterativeParallelism implements AdvancedIP {
 
     private final ParallelMapper mapper;
 
-    //todo
+    /**
+     * Constructor if {@link ParallelMapper} given. Makes mapper for {@link #oneFunc(int, List, Function)}.
+     * @param mapper {@link ParallelMapper} class, that will do all work with threads
+     */
 
     public IterativeParallelism(ParallelMapper mapper) {
         this.mapper = mapper;
     }
 
-    //todo
+    /**
+     * Default constructors for {@link IterativeParallelism}.
+     * {@link #mapper} is null
+     */
 
     public IterativeParallelism() {
         this.mapper = null;
