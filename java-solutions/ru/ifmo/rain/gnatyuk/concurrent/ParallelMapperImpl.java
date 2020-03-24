@@ -6,10 +6,8 @@ import java.util.*;
 import java.util.function.Function;
 
 public class ParallelMapperImpl implements ParallelMapper {
-    private List<Thread> workers;
+    private final List<Thread> workers;
     private final Queue<Runnable> tasks;
-
-    private final int threads;
 
     private static final int MAX_TASKS = Integer.MAX_VALUE - 1;
 
@@ -20,20 +18,21 @@ public class ParallelMapperImpl implements ParallelMapper {
      *
      * @param threads maximum count of operable threads
      */
-    public ParallelMapperImpl(int threads) {
+    public ParallelMapperImpl(final int threads) {
         if (threads <= 0) {
             throw new IllegalArgumentException("Threads number must be positive");
         }
-        this.threads = threads;
         tasks = new ArrayDeque<>();
         workers = new ArrayList<>();
+        // :NOTE: Stream
         for (int i = 0; i < threads; i++) {
+            // :NOTE: Одинаковые экземпляры
             workers.add(new Thread(() -> {
                 try {
                     while (!Thread.interrupted()) {
                         runSynchronized();
                     }
-                } catch (InterruptedException ignored) {
+                } catch (final InterruptedException ignored) {
                 } finally {
                     Thread.currentThread().interrupt();
                 }
@@ -43,7 +42,7 @@ public class ParallelMapperImpl implements ParallelMapper {
     }
 
     private void runSynchronized() throws InterruptedException {
-        Runnable task;
+        final Runnable task;
         synchronized (tasks) {
             while (tasks.isEmpty()) {
                 tasks.wait();
@@ -57,7 +56,7 @@ public class ParallelMapperImpl implements ParallelMapper {
     private class CounterList<E> extends ArrayList<E> {
         int counter;
 
-        CounterList(List<E> list) {
+        CounterList(final List<E> list) {
             super(list);
             counter = 0;
         }
@@ -81,9 +80,9 @@ public class ParallelMapperImpl implements ParallelMapper {
      */
 
     @Override
-    public <T, R> List<R> map(Function<? super T, ? extends R> f, List<? extends T> args) throws InterruptedException {
-        CounterList<R> collector = new CounterList<>(Collections.nCopies(args.size(), null));
-        List<RuntimeException> runtimeExceptions = new ArrayList<>();
+    public <T, R> List<R> map(final Function<? super T, ? extends R> f, final List<? extends T> args) throws InterruptedException {
+        final CounterList<R> collector = new CounterList<>(Collections.nCopies(args.size(), null));
+        final List<RuntimeException> runtimeExceptions = new ArrayList<>();
         for (int i = 0; i < args.size(); i++) {
             final int index = i;
             synchronized (tasks) {
@@ -94,7 +93,7 @@ public class ParallelMapperImpl implements ParallelMapper {
                     R val = null;
                     try {
                         val = f.apply(args.get(index));
-                    } catch (RuntimeException e) {
+                    } catch (final RuntimeException e) {
                         synchronized (runtimeExceptions) {
                             runtimeExceptions.add(e);
                         }
@@ -106,7 +105,7 @@ public class ParallelMapperImpl implements ParallelMapper {
             }
         }
         if (!runtimeExceptions.isEmpty()) {
-            RuntimeException mapFail = new RuntimeException("Errors occured while mapping some of the values");
+            final RuntimeException mapFail = new RuntimeException("Errors occured while mapping some of the values");
             runtimeExceptions.forEach(mapFail::addSuppressed);
             throw mapFail;
         }

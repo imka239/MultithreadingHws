@@ -37,29 +37,22 @@ public class IterativeParallelism implements AdvancedIP {
         this.mapper = null;
     }
 
-    // :NOTE: `> >` viva la C++!
-    //private <T> List<Stream<T> > split(final int threads, final List<T> values) {
     private static <T> List<Stream<T>> split(final int threads, final List<T> values) {
         final List<Stream<T>> parts = new ArrayList<>();
-        // :NOTE: Упростить
-        //final int pack = (values.size() % threads == 0) ? values.size() / threads : values.size() / threads + 1;
         final int pack = values.size() / threads;
         int r = values.size() % threads;
-        // :NOTE: Длинный последний кусок
-//        for (int i = 0; i * pack < values.size(); i++) {
-//            parts.add(values.subList(i * pack, ((i + 1) * pack < values.size()) ? (i + 1) * pack : values.size()).stream());
-//        }
 
         int start = 0;
-        while(start < values.size()) {
-            parts.add(values.subList(start, start + pack + (r > 0 ? 1 : 0)).stream());
-            start += pack + (r > 0 ? 1 : 0);
+        while (start < values.size()) {
+            final int end = pack + (r > 0 ? 1 : 0);
+            parts.add(values.subList(start, start + end).stream());
             r--;
+            start = end;
         }
         return parts;
     }
 
-    private void joinAll(final List<Thread> workers) throws InterruptedException {
+    private static void joinAll(final List<Thread> workers) throws InterruptedException {
         for (int i = 0; i < workers.size(); i++) {
             try {
                 workers.get(i).join();
