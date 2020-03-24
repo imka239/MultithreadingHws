@@ -149,7 +149,7 @@ public class IterativeParallelism implements AdvancedIP {
     // а вычисляются в одном
     @Override
     public <T> List<T> filter(final int threads, final List<? extends T> values, final Predicate<? super T> predicate) throws InterruptedException {
-        return twoFunc(threads, values, s -> s.filter(predicate), s -> s.flatMap(Function.identity()).collect(Collectors.toList()));
+        return twoFunc(threads, values, s -> s.filter(predicate).collect(Collectors.toList()), IterativeParallelism::merge);
     }
 
     private static <T> List<T> merge(final Stream<? extends List<? extends T>> streams) {
