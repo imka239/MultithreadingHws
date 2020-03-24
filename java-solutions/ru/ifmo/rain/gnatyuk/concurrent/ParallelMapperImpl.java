@@ -5,8 +5,6 @@ import info.kgeorgiy.java.advanced.mapper.ParallelMapper;
 import java.util.*;
 import java.util.function.Function;
 
-//todo
-
 public class ParallelMapperImpl implements ParallelMapper {
     private List<Thread> workers;
     private final Queue<Runnable> tasks;
