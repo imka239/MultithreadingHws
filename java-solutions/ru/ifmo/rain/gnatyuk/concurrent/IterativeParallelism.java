@@ -39,7 +39,7 @@ public class IterativeParallelism implements AdvancedIP {
 
     // :NOTE: `> >` viva la C++!
     //private <T> List<Stream<T> > split(final int threads, final List<T> values) {
-    private <T> List<Stream<T>> split(final int threads, final List<T> values) {
+    private static <T> List<Stream<T>> split(final int threads, final List<T> values) {
         final List<Stream<T> > parts = new ArrayList<>();
         // :NOTE: Упростить
         //final int pack = (values.size() % threads == 0) ? values.size() / threads : values.size() / threads + 1;
@@ -59,7 +59,7 @@ public class IterativeParallelism implements AdvancedIP {
         return parts;
     }
 
-    private void joinAll(List<Thread> workers) throws InterruptedException {
+    private void joinAll(final List<Thread> workers) throws InterruptedException {
         for (int i = 0; i < workers.size(); i++) {
             try {
                 workers.get(i).join();
@@ -72,7 +72,7 @@ public class IterativeParallelism implements AdvancedIP {
                 for (int j = i; j < workers.size(); j++) {
                     try {
                         workers.get(j).join();
-                    } catch (InterruptedException er) {
+                    } catch (final InterruptedException er) {
                         exception.addSuppressed(er);
                         j--;
                     }
@@ -82,11 +82,11 @@ public class IterativeParallelism implements AdvancedIP {
         }
     }
 
-    static void joinAllNoThrow(List<Thread> workers) {
+    static void joinAllNoThrow(final List<Thread> workers) {
         workers.forEach(thread -> {
             try {
                 thread.join();
-            } catch (InterruptedException ignored) {
+            } catch (final InterruptedException ignored) {
             }
         });
     }
@@ -101,9 +101,9 @@ public class IterativeParallelism implements AdvancedIP {
 
     private <T, M> List<M> oneFunc(final int threads, final List<T> values, final Function<Stream<T>, M> func) throws InterruptedException {
         final List<Stream<T>> parts = split(threads, values);
-        List<M> counted;
+        final List<M> counted;
         if (mapper == null) {
-            List<Thread> workers = new ArrayList<>();
+            final List<Thread> workers = new ArrayList<>();
             counted = new ArrayList<>(Collections.nCopies(parts.size(), null));
             for (int i = 0; i < parts.size(); i++) {
                 final int index = i;
@@ -145,7 +145,8 @@ public class IterativeParallelism implements AdvancedIP {
      *
      * @throws InterruptedException if executing thread was interrupted.
      */
-
+    // :NOTE: Метод получился, по сути, онопоточный, так как стримы создаются в параллельных потоках,
+    // а вычисляются в одном
     @Override
     public <T> List<T> filter(final int threads, final List<? extends T> values, final Predicate<? super T> predicate) throws InterruptedException {
         return twoFunc(threads, values, s -> s.filter(predicate), s -> s.flatMap(Function.identity()).collect(Collectors.toList()));
@@ -190,7 +191,7 @@ public class IterativeParallelism implements AdvancedIP {
 
     @Override
     public <T> T maximum(final int threads, final List<? extends T> values, final Comparator<? super T> comparator) throws InterruptedException {
-        return doubleFunc(threads, values, (s -> s.max(comparator).orElse(null)));
+        return doubleFunc(threads, values, s -> s.max(comparator).orElse(null));
     }
 
     /**
