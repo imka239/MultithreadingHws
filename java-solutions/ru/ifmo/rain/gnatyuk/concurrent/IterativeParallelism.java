@@ -33,7 +33,6 @@ public class IterativeParallelism implements AdvancedIP {
      * Default constructors for {@link IterativeParallelism}.
      * {@link #mapper} is null
      */
-
     public IterativeParallelism() {
         this.mapper = null;
     }
