@@ -5,13 +5,15 @@ import info.kgeorgiy.java.advanced.mapper.ParallelMapper;
 import java.util.*;
 import java.util.function.Function;
 
+//todo
+
 public class ParallelMapperImpl implements ParallelMapper {
     private List<Thread> workers;
     private final Queue<Runnable> tasks;
 
     private final int threads;
 
-    private static final int MAX_TASKS = 1000000;
+    private static final int MAX_TASKS = Integer.MAX_VALUE - 1;
 
     /**
      * Thread-count constructor.

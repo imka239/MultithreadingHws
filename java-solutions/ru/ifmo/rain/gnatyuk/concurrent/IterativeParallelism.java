@@ -40,7 +40,7 @@ public class IterativeParallelism implements AdvancedIP {
     // :NOTE: `> >` viva la C++!
     //private <T> List<Stream<T> > split(final int threads, final List<T> values) {
     private static <T> List<Stream<T>> split(final int threads, final List<T> values) {
-        final List<Stream<T> > parts = new ArrayList<>();
+        final List<Stream<T>> parts = new ArrayList<>();
         // :NOTE: Упростить
         //final int pack = (values.size() % threads == 0) ? values.size() / threads : values.size() / threads + 1;
         final int pack = values.size() / threads;
@@ -191,7 +191,7 @@ public class IterativeParallelism implements AdvancedIP {
 
     @Override
     public <T> T maximum(final int threads, final List<? extends T> values, final Comparator<? super T> comparator) throws InterruptedException {
-        return doubleFunc(threads, values, s -> s.max(comparator).orElse(null));
+        return minimum(threads, values, comparator.reversed());
     }
 
     /**
