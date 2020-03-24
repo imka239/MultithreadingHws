@@ -4,9 +4,6 @@ import info.kgeorgiy.java.advanced.mapper.ParallelMapper;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-
-//todo
 
 public class ParallelMapperImpl implements ParallelMapper {
     private List<Thread> workers;
