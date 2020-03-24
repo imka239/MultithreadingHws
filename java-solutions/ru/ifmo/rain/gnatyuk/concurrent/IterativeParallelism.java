@@ -25,7 +25,7 @@ public class IterativeParallelism implements AdvancedIP {
      * @param mapper {@link ParallelMapper} class, that will do all work with threads
      */
 
-    public IterativeParallelism(ParallelMapper mapper) {
+    public IterativeParallelism(final ParallelMapper mapper) {
         this.mapper = mapper;
     }
 

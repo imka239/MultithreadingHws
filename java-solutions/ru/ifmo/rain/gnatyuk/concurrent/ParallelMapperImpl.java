@@ -4,6 +4,9 @@ import info.kgeorgiy.java.advanced.mapper.ParallelMapper;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+
+//todo
 
 public class ParallelMapperImpl implements ParallelMapper {
     private List<Thread> workers;
@@ -83,6 +86,7 @@ public class ParallelMapperImpl implements ParallelMapper {
     @Override
     public <T, R> List<R> map(Function<? super T, ? extends R> f, List<? extends T> args) throws InterruptedException {
         CounterList<R> collector = new CounterList<>(Collections.nCopies(args.size(), null));
+        List<RuntimeException> runtimeExceptions = new ArrayList<>();
         for (int i = 0; i < args.size(); i++) {
             final int index = i;
             synchronized (tasks) {
@@ -90,11 +94,24 @@ public class ParallelMapperImpl implements ParallelMapper {
                     tasks.wait();
                 }
                 tasks.add(() -> {
-                    collector.set(index, f.apply(args.get(index)));
+                    R val = null;
+                    try {
+                        val = f.apply(args.get(index));
+                    } catch (RuntimeException e) {
+                        synchronized (runtimeExceptions) {
+                            runtimeExceptions.add(e);
+                        }
+                    }
+                    collector.set(index, val);
                     collector.incCounter();
                 });
                 tasks.notifyAll();
             }
+        }
+        if (!runtimeExceptions.isEmpty()) {
+            RuntimeException mapFail = new RuntimeException("Errors occured while mapping some of the values");
+            runtimeExceptions.forEach(mapFail::addSuppressed);
+            throw mapFail;
         }
         synchronized (collector) {
             while (collector.getCounter() < collector.size()) {
