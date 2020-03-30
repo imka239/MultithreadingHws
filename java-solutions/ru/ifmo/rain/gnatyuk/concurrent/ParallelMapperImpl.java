@@ -4,12 +4,18 @@ import info.kgeorgiy.java.advanced.mapper.ParallelMapper;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+//todo
 
 public class ParallelMapperImpl implements ParallelMapper {
-    private final List<Thread> workers;
-    private final Queue<Runnable> tasks;
+    private List<Thread> workers;
+    private final SynchronizedQueue<Runnable> tasks;
 
-    private static final int MAX_TASKS = Integer.MAX_VALUE - 1;
+    private final int threads;
+
+    private static final int MAX_TASKS = 1000000;
 
     /**
      * Thread-count constructor.
@@ -18,26 +24,23 @@ public class ParallelMapperImpl implements ParallelMapper {
      *
      * @param threads maximum count of operable threads
      */
-    public ParallelMapperImpl(final int threads) {
+    public ParallelMapperImpl(int threads) {
         if (threads <= 0) {
             throw new IllegalArgumentException("Threads number must be positive");
         }
-        tasks = new ArrayDeque<>();
-        workers = new ArrayList<>();
-        // :NOTE: Stream
-        for (int i = 0; i < threads; i++) {
-            // :NOTE: Одинаковые экземпляры
-            workers.add(new Thread(() -> {
-                try {
-                    while (!Thread.interrupted()) {
-                        runSynchronized();
-                    }
-                } catch (final InterruptedException ignored) {
-                } finally {
-                    Thread.currentThread().interrupt();
+        this.threads = threads;
+        tasks = new SynchronizedQueue<>(new ArrayDeque<>());
+        final Runnable TASK = () -> {
+            try {
+                while (!Thread.interrupted()) {
+                    runSynchronized();
                 }
-            } ));
-        }
+            } catch (final InterruptedException ignored) {
+            } finally {
+                Thread.currentThread().interrupt();
+            }
+        };
+        workers = IntStream.range(0, threads).mapToObj(x -> new Thread(TASK)).collect(Collectors.toList());
         workers.forEach(Thread::start);
     }
 
@@ -53,21 +56,61 @@ public class ParallelMapperImpl implements ParallelMapper {
         task.run();
     }
 
-    private class CounterList<E> extends ArrayList<E> {
-        int counter;
+    private class SynchronizedQueue<T> {
+        private final Queue<T> data;
 
-        CounterList(final List<E> list) {
-            super(list);
+        SynchronizedQueue(Queue<T> data) {
+            this.data = data;
+        }
+
+        void add(T value) {
+            synchronized (data) {
+                data.add(value);
+                data.notify();
+            }
+        }
+
+        T poll() throws InterruptedException {
+            synchronized (data) {
+                while (data.isEmpty()) {
+                    data.wait();
+                }
+
+                return data.poll();
+            }
+        }
+
+        boolean isEmpty() {
+            return data.isEmpty();
+        }
+
+        int size() {
+            return data.size();
+        }
+    }
+
+    private class SynchronizedTasks<E> {
+        private List<E> tasks;
+        private int counter;
+
+        SynchronizedTasks(int size) {
+            tasks = new ArrayList<>(Collections.nCopies(size, null));
             counter = 0;
         }
 
-        int getCounter() {return counter;}
-
-        synchronized void incCounter() {
+        synchronized void setTasks(final int pos, E el) {
+            tasks.set(pos, el);
             counter++;
-            if (counter == this.size()) {
+            if (counter == tasks.size()) {
                 notifyAll();
             }
+        }
+
+        synchronized List<E> getTasks() throws InterruptedException {
+            while (counter < tasks.size()) {
+                wait();
+            }
+            return tasks;
         }
     }
 
@@ -80,9 +123,9 @@ public class ParallelMapperImpl implements ParallelMapper {
      */
 
     @Override
-    public <T, R> List<R> map(final Function<? super T, ? extends R> f, final List<? extends T> args) throws InterruptedException {
-        final CounterList<R> collector = new CounterList<>(Collections.nCopies(args.size(), null));
-        final List<RuntimeException> runtimeExceptions = new ArrayList<>();
+    public <T, R> List<R> map(Function<? super T, ? extends R> f, List<? extends T> args) throws InterruptedException {
+        SynchronizedTasks<R> collector = new SynchronizedTasks<>(args.size());
+        List<RuntimeException> runtimeExceptions = new ArrayList<>();
         for (int i = 0; i < args.size(); i++) {
             final int index = i;
             synchronized (tasks) {
@@ -93,13 +136,12 @@ public class ParallelMapperImpl implements ParallelMapper {
                     R val = null;
                     try {
                         val = f.apply(args.get(index));
-                    } catch (final RuntimeException e) {
+                    } catch (RuntimeException e) {
                         synchronized (runtimeExceptions) {
                             runtimeExceptions.add(e);
                         }
                     }
-                    collector.set(index, val);
-                    collector.incCounter();
+                    collector.setTasks(index, val);
                 });
                 tasks.notifyAll();
             }
@@ -109,12 +151,7 @@ public class ParallelMapperImpl implements ParallelMapper {
             runtimeExceptions.forEach(mapFail::addSuppressed);
             throw mapFail;
         }
-        synchronized (collector) {
-            while (collector.getCounter() < collector.size()) {
-                collector.wait();
-            }
-        }
-        return collector;
+        return collector.getTasks();
     }
 
     /** Stops all threads. All unfinished mappings leave in undefined state. */

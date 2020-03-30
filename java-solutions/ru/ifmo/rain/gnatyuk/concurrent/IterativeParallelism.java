@@ -47,7 +47,7 @@ public class IterativeParallelism implements AdvancedIP {
             final int end = pack + (r > 0 ? 1 : 0);
             parts.add(values.subList(start, start + end).stream());
             r--;
-            start = end;
+            start += end;
         }
         return parts;
     }
@@ -138,8 +138,6 @@ public class IterativeParallelism implements AdvancedIP {
      *
      * @throws InterruptedException if executing thread was interrupted.
      */
-    // :NOTE: Метод получился, по сути, онопоточный, так как стримы создаются в параллельных потоках,
-    // а вычисляются в одном
     @Override
     public <T> List<T> filter(final int threads, final List<? extends T> values, final Predicate<? super T> predicate) throws InterruptedException {
         return twoFunc(threads, values, s -> s.filter(predicate).collect(Collectors.toList()), IterativeParallelism::merge);
