@@ -7,8 +7,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-//todo
-
 public class ParallelMapperImpl implements ParallelMapper {
     private List<Thread> workers;
     private final SynchronizedQueue<Runnable> tasks;
