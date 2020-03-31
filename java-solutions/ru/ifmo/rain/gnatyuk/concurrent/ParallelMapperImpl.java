@@ -7,13 +7,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+
 public class ParallelMapperImpl implements ParallelMapper {
     private List<Thread> workers;
     private final SynchronizedQueue<Runnable> tasks;
-
-    private final int threads;
-
-    private static final int MAX_TASKS = 1000000;
 
     /**
      * Thread-count constructor.
@@ -26,12 +23,13 @@ public class ParallelMapperImpl implements ParallelMapper {
         if (threads <= 0) {
             throw new IllegalArgumentException("Threads number must be positive");
         }
-        this.threads = threads;
         tasks = new SynchronizedQueue<>(new ArrayDeque<>());
         final Runnable TASK = () -> {
             try {
                 while (!Thread.interrupted()) {
-                    runSynchronized();
+                    final Runnable task;
+                    task = tasks.poll();
+                    task.run();
                 }
             } catch (final InterruptedException ignored) {
             } finally {
@@ -40,18 +38,6 @@ public class ParallelMapperImpl implements ParallelMapper {
         };
         workers = IntStream.range(0, threads).mapToObj(x -> new Thread(TASK)).collect(Collectors.toList());
         workers.forEach(Thread::start);
-    }
-
-    private void runSynchronized() throws InterruptedException {
-        final Runnable task;
-        synchronized (tasks) {
-            while (tasks.isEmpty()) {
-                tasks.wait();
-            }
-            task = tasks.poll();
-            tasks.notifyAll();
-        }
-        task.run();
     }
 
     private class SynchronizedQueue<T> {
@@ -77,38 +63,58 @@ public class ParallelMapperImpl implements ParallelMapper {
                 return data.poll();
             }
         }
-
-        boolean isEmpty() {
-            return data.isEmpty();
-        }
-
-        int size() {
-            return data.size();
-        }
     }
 
-    private class SynchronizedTasks<E> {
-        private List<E> tasks;
+    private static class SynchronizedTasks<E, T> {
+        private final List<E> tasks;
+        private final List<T> errors;
         private int counter;
 
         SynchronizedTasks(int size) {
-            tasks = new ArrayList<>(Collections.nCopies(size, null));
-            counter = 0;
+            this.tasks = new ArrayList<>(Collections.nCopies(size, null));
+            this.errors = new ArrayList<>();
+            this.counter = 0;
         }
 
         synchronized void setTasks(final int pos, E el) {
-            tasks.set(pos, el);
+            synchronized (tasks) {
+                tasks.set(pos, el);
+            }
             counter++;
             if (counter == tasks.size()) {
-                notifyAll();
+                notify();
+            }
+        }
+
+        synchronized void setError(final T e) {
+            synchronized (errors) {
+                errors.add(e);
+            }
+            counter++;
+            if (counter == tasks.size()) {
+                notify();
+            }
+        }
+
+        private synchronized void waitCounter() throws InterruptedException {
+            while (counter < tasks.size()) {
+                wait();
             }
         }
 
         synchronized List<E> getTasks() throws InterruptedException {
-            while (counter < tasks.size()) {
-                wait();
-            }
+            waitCounter();
             return tasks;
+        }
+
+        synchronized boolean hasErrors() throws InterruptedException {
+            waitCounter();
+            return !errors.isEmpty();
+        }
+
+        synchronized List<T> getErrors() throws InterruptedException {
+            waitCounter();
+            return errors;
         }
     }
 
@@ -122,31 +128,20 @@ public class ParallelMapperImpl implements ParallelMapper {
 
     @Override
     public <T, R> List<R> map(Function<? super T, ? extends R> f, List<? extends T> args) throws InterruptedException {
-        SynchronizedTasks<R> collector = new SynchronizedTasks<>(args.size());
-        List<RuntimeException> runtimeExceptions = new ArrayList<>();
+        SynchronizedTasks<R, RuntimeException> collector = new SynchronizedTasks<>(args.size());
         for (int i = 0; i < args.size(); i++) {
             final int index = i;
-            synchronized (tasks) {
-                while (tasks.size() >= MAX_TASKS) {
-                    tasks.wait();
+            tasks.add(() -> {
+                try {
+                    collector.setTasks(index, f.apply(args.get(index)));
+                } catch (final RuntimeException e) {
+                    collector.setError(e);
                 }
-                tasks.add(() -> {
-                    R val = null;
-                    try {
-                        val = f.apply(args.get(index));
-                    } catch (RuntimeException e) {
-                        synchronized (runtimeExceptions) {
-                            runtimeExceptions.add(e);
-                        }
-                    }
-                    collector.setTasks(index, val);
-                });
-                tasks.notifyAll();
-            }
+            });
         }
-        if (!runtimeExceptions.isEmpty()) {
+        if (collector.hasErrors()) {
             final RuntimeException mapFail = new RuntimeException("Errors occured while mapping some of the values");
-            runtimeExceptions.forEach(mapFail::addSuppressed);
+            collector.getErrors().forEach(mapFail::addSuppressed);
             throw mapFail;
         }
         return collector.getTasks();
