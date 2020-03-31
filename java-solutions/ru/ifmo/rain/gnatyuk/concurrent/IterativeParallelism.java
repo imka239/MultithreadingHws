@@ -92,19 +92,24 @@ public class IterativeParallelism implements AdvancedIP {
         return func.apply(oneFunc(threads, values, func).stream());
     }
 
+    private static <T, U> List<U> iterative(List<Stream<T>> parts, final Function<Stream<T>, U> func) throws InterruptedException {
+        final List<Thread> workers = new ArrayList<>();
+        final List<U> counted = new ArrayList<>(Collections.nCopies(parts.size(), null));
+        for (int i = 0; i < parts.size(); i++) {
+            final int index = i;
+            final Thread thread = new Thread(() -> counted.set(index, func.apply(parts.get(index))));
+            workers.add(thread);
+            thread.start();
+        }
+        joinAll(workers);
+        return counted;
+    }
+
     private <T, M> List<M> oneFunc(final int threads, final List<T> values, final Function<Stream<T>, M> func) throws InterruptedException {
         final List<Stream<T>> parts = split(threads, values);
         final List<M> counted;
         if (mapper == null) {
-            final List<Thread> workers = new ArrayList<>();
-            counted = new ArrayList<>(Collections.nCopies(parts.size(), null));
-            for (int i = 0; i < parts.size(); i++) {
-                final int index = i;
-                final Thread thread = new Thread(() -> counted.set(index, func.apply(parts.get(index))));
-                workers.add(thread);
-                thread.start();
-            }
-            joinAll(workers);
+            counted = iterative(parts, func);
         } else {
             counted = mapper.map(func, parts);
         }

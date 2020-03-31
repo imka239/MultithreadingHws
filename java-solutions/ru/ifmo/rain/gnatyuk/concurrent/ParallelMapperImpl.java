@@ -83,6 +83,8 @@ public class ParallelMapperImpl implements ParallelMapper {
 //        }
 //    }
 
+
+
 //    private class SynchronizedTasks<E> {
 //        private List<E> tasks;
 //        private int counter;
