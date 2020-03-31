@@ -65,6 +65,49 @@ public class ParallelMapperImpl implements ParallelMapper {
         }
     }
 
+//    private class CounterList<E> extends ArrayList<E> {
+//        int counter;
+//
+//        CounterList(List<E> list) {
+//            super(list);
+//            counter = 0;
+//        }
+//
+//        int getCounter() {return counter;}
+//
+//        synchronized void incCounter() {
+//            counter++;
+//            if (counter == this.size()) {
+//                notifyAll();
+//            }
+//        }
+//    }
+
+//    private class SynchronizedTasks<E> {
+//        private List<E> tasks;
+//        private int counter;
+//
+//        SynchronizedTasks(int size) {
+//            tasks = new ArrayList<>(Collections.nCopies(size, null));
+//            counter = 0;
+//        }
+//
+//        synchronized void setTasks(final int pos, E el) {
+//            tasks.set(pos, el);
+//            counter++;
+//            if (counter == tasks.size()) {
+//                notifyAll();
+//            }
+//        }
+//
+//        synchronized List<E> getTasks() throws InterruptedException {
+//            while (counter < tasks.size()) {
+//                wait();
+//            }
+//            return tasks;
+//        }
+//    }
+
     private static class SynchronizedTasks<E, T> {
         private final List<E> tasks;
         private final List<T> errors;
@@ -129,6 +172,27 @@ public class ParallelMapperImpl implements ParallelMapper {
     @Override
     public <T, R> List<R> map(Function<? super T, ? extends R> f, List<? extends T> args) throws InterruptedException {
         SynchronizedTasks<R, RuntimeException> collector = new SynchronizedTasks<>(args.size());
+//        List<RuntimeException> runtimeExceptions = new ArrayList<>();
+//        for (int i = 0; i < args.size(); i++) {
+//            final int index = i;
+//            synchronized (tasks) {
+//                while (tasks.size() >= MAX_TASKS) {
+//                    tasks.wait();
+//                }
+//                tasks.add(() -> {
+//                    R val = null;
+//                    try {
+//                        val = f.apply(args.get(index));
+//                    } catch (RuntimeException e) {
+//                        synchronized (runtimeExceptions) {
+//                            runtimeExceptions.add(e);
+//                        }
+//                    }
+//                    collector.setTasks(index, val);
+//                });
+//                tasks.notifyAll();
+//            }
+//        }
         for (int i = 0; i < args.size(); i++) {
             final int index = i;
             tasks.add(() -> {
